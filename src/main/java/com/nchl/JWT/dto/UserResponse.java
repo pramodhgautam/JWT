@@ -18,5 +18,6 @@ public class UserResponse {
     private String firstname;
     private String lastname;
     private LocalDateTime createdAt;
+    private String token;
 }
 

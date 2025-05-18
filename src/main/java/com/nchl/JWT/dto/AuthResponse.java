@@ -15,6 +15,7 @@ public class AuthResponse <T> {
     private String responseCode;
     private String responseMessage;
     private String token;
-    private LocalDateTime expiresAt; // Optional: add token expiration time
+    @Builder.Default
+    private boolean oneTime = true; // Default to one-time tokens
 
 }
