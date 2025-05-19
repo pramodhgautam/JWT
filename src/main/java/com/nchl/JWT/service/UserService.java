@@ -4,10 +4,13 @@ import com.nchl.JWT.dto.ApiResponse;
 import com.nchl.JWT.dto.CreditorUserDto;
 import com.nchl.JWT.exception.UserNotFoundException;
 import com.nchl.JWT.model.CreditorUser;
+import com.nchl.JWT.model.CreditorUserRoleMap;
 import com.nchl.JWT.model.ResponseCode;
 import com.nchl.JWT.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -15,6 +18,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -24,9 +30,29 @@ public class UserService implements UserDetailsService {
     private final UserMapper userMapper;
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return (UserDetails) userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return userRepository.findByUsername(username)
+                .map(user -> {
+                    // Extract roles from CreditorUserRoleMap
+                    Set<GrantedAuthority> authorities = user.getCreditorUserRoleMap().stream()
+                            .filter(Objects::nonNull)
+                            .map(CreditorUserRoleMap::getCreditorRole)
+                            .filter(Objects::nonNull)
+                            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+                            .collect(Collectors.toSet());
+
+                    if (authorities.isEmpty()) {
+                        // Assign default role if no roles found
+                        authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+                    }
+
+                    return new org.springframework.security.core.userdetails.User(
+                            user.getUsername(),
+                            user.getPassword(),
+                            authorities
+                    );
+                })
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
     }
 
     public ApiResponse<List<CreditorUserDto>> getAllUsers() {

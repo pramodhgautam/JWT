@@ -18,6 +18,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -82,7 +83,7 @@ public class AuthService {
             log.info("New user registered with ID: {}", savedUser.getId());
 
             // Generate JWT token (if needed for immediate login)
-            String jwtToken = jwtService.generateToken(user);
+            String jwtToken = jwtService.generateOneTimeToken(user);
 
             // Build response data
             CreditorUserDto userData = CreditorUserDto.builder()
@@ -113,20 +114,20 @@ public class AuthService {
         }
     }
 
-    public AuthResponse authenticate(AuthRequest request) {
+    public AuthResponse<Object> authenticate(@RequestBody AuthRequest request) {
 
-        CreditorUser user = userRepository.findByEmail(request.getEmail())
+        CreditorUser user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        user.getEmail(),
+                        user.getUsername(),
                         request.getPassword()
                 )
         );
 
         // Generate token with ID as subject
-        String jwtToken = jwtService.generateOneTimeToken(user);
+        String jwtToken = jwtService.generateToken(user);
 
         return AuthResponse.builder()
                 .responseCode("000")
