@@ -1,62 +1,112 @@
 package com.nchl.JWT.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
-@Data
 @Getter
 @Setter
-@Builder
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
+@Builder(toBuilder = true)
 @Entity
 @Table(name = "creditor_user")
-public class CreditorUser implements UserDetails {
+@SequenceGenerator(name="creditor_user_id_seq", sequenceName = "creditor_user_id_seq", allocationSize=1)
+public class CreditorUser {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-    private String firstname;
-    private String lastname;
-    private String email;
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "creditor_user_id_seq")
+    private Long id;
+
+    @Column(name = "first_name")
+    private String firstName;
+
+    @Column(name = "middle_name")
+    private String middleName;
+
+    @Column(name = "last_name")
+    private String lastName;
+
+    @Column(name = "username", unique = true)
+    private String username;
+
+    @Column(name = "password")
     private String password;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role")
-    private Role role;
+    @Column(name = "mobile_number")
+    private String mobileNumber;
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role.getAuthority()));
-    }
+    @Column(name = "email")
+    private String email;
 
-    @Override
-    public String getUsername() {
-        return this.email;
-    }
+    @Column(name = "ps_short_code")
+    private Integer psSortCode;
 
-    @Override
-    public boolean isAccountNonExpired() {
-        return UserDetails.super.isAccountNonExpired();
-    }
+    @Column(name = "merchant_code")
+    private String merchantCode;
 
-    @Override
-    public boolean isAccountNonLocked() {
-        return UserDetails.super.isAccountNonLocked();
-    }
+    @Column(name = "sub_merchant_code")
+    private String subMerchantCode;
 
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return UserDetails.super.isCredentialsNonExpired();
-    }
+    @Column(name="first_login_flag")
+    private boolean firstLogin;
 
-    @Override
-    public boolean isEnabled() {
-        return UserDetails.super.isEnabled();
-    }
+    @Column(name="no_of_login_attempts")
+    private Integer loginAttempt;
+
+    @Column(name = "is_enable")
+    private boolean isEnable;
+
+    @Column(name="device_id")
+    private String deviceId;
+
+    @Column(name = "pwd_change_status")
+    private String passwordChangeStatus;
+
+    @Column(name="notification_id")
+    private String notificationId;
+
+    @Column(name = "status")
+    private  String status;
+
+    @Embedded
+    private EntityAuditInfo entityAuditInfo;
+
+    @OneToMany(mappedBy = "creditorUser", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JsonIgnoreProperties("creditorUser")
+    private Set<CreditorUserRoleMap> creditorUserRoleMap;
+
+    @Column(name = "last_wrong_entry")
+    private Date lastWrongEntryDate;
+
+    @Column(name = "account_locked")
+    private boolean accountLocked;
+
+    @Column(name = "account_suspended")
+    private boolean accountSuspended;
+
+    @Column(name="legal_name")
+    private String legalName;
+
+    @Column(name="terminal")
+    private String terminal;
+
+    @Column(name = "pwd_lchg_date")
+    private LocalDateTime passwordLastChangeDate;
+
+    @Column(name = "user_registered_by")
+    private String userRegisteredThrough;
+
+    @Column(name = "voice_notification")
+    private boolean voiceNotification;
 }

@@ -1,7 +1,7 @@
 package com.nchl.JWT.service;
 
 import com.nchl.JWT.dto.ApiResponse;
-import com.nchl.JWT.dto.UserDto;
+import com.nchl.JWT.dto.CreditorUserDto;
 import com.nchl.JWT.exception.UserNotFoundException;
 import com.nchl.JWT.model.CreditorUser;
 import com.nchl.JWT.model.ResponseCode;
@@ -25,18 +25,18 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return userRepository.findByEmail(email)
+        return (UserDetails) userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
-    public ApiResponse<List<UserDto>> getAllUsers() {
+    public ApiResponse<List<CreditorUserDto>> getAllUsers() {
         try {
-            List<UserDto> users = userRepository.findAll()
+            List<CreditorUserDto> users = userRepository.findAll()
                     .stream()
                     .map(userMapper::toDto)
                     .toList();
 
-            return ApiResponse.<List<UserDto>>builder()
+            return ApiResponse.<List<CreditorUserDto>>builder()
                     .responseCode(ResponseCode.SUCCESS.getCode())
                     .responseMessage("Users retrieved successfully")
                     .data(users)
@@ -45,7 +45,7 @@ public class UserService implements UserDetailsService {
 
         } catch (Exception e) {
             log.error("Failed to retrieve users", e);
-            return ApiResponse.<List<UserDto>>builder()
+            return ApiResponse.<List<CreditorUserDto>>builder()
                     .responseCode(ResponseCode.SERVER_ERROR.getCode())
                     .responseMessage("Failed to retrieve users")
                     .timestamp(Instant.now())
@@ -53,14 +53,15 @@ public class UserService implements UserDetailsService {
         }
     }
 
-    public ApiResponse<UserDto> getUserById(Integer id) {
+    public ApiResponse<CreditorUserDto> getUserById(Integer id) {
         log.info("🟠 Service fetching user by ID: {}", id);
         try {
-            UserDto userDto = userRepository.findById(id)
+
+            CreditorUserDto userDto = userRepository.findById(id)
                     .map(userMapper::toDto)
                     .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
 
-            return ApiResponse.<UserDto>builder()
+            return ApiResponse.<CreditorUserDto>builder()
                     .responseCode(ResponseCode.SUCCESS.getCode())
                     .responseMessage("User retrieved successfully")
                     .data(userDto)
@@ -69,13 +70,13 @@ public class UserService implements UserDetailsService {
 
         } catch (UserNotFoundException e) {
             log.warn("User not found with ID: {}", id);
-            return ApiResponse.<UserDto>builder()
+            return ApiResponse.<CreditorUserDto>builder()
                     .responseCode(ResponseCode.NOT_FOUND.getCode())
                     .responseMessage(e.getMessage())
                     .build();
         } catch (Exception e) {
             log.error("Error fetching user with ID: {}", id, e);
-            return ApiResponse.<UserDto>builder()
+            return ApiResponse.<CreditorUserDto>builder()
                     .responseCode(ResponseCode.SERVER_ERROR.getCode())
                     .responseMessage("Failed to retrieve user")
                     .build();

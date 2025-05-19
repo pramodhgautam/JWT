@@ -1,7 +1,6 @@
 package com.nchl.JWT.security;
 
 import com.nchl.JWT.model.CreditorUser;
-import com.nchl.JWT.model.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -31,16 +30,20 @@ public class JwtService {
     public String generateOneTimeToken(CreditorUser userDetails) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("oneTime", true); // Mark as one-time token
-        claims.put("roles", userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList()));
+
+        // Extract roles from the CreditorUserRoleMap relationship
+        Set<String> roles = userDetails.getCreditorUserRoleMap().stream()
+                .map(roleMap -> roleMap.getCreditorRole().getName())
+                .collect(Collectors.toSet());
+
+        claims.put("roles", new ArrayList<>(roles)); // Convert to List if needed
 
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(userDetails.getUsername())
-                .setIssuedAt(new Date())
-                // No expiration - token becomes invalid after first use
-                .signWith(getSignInKey(), SignatureAlgorithm.HS256)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 5)) // 5 min expiration
+                .signWith(SignatureAlgorithm.HS256, secretKey)
                 .compact();
     }
 
@@ -54,9 +57,12 @@ public class JwtService {
 
     public String generateToken(CreditorUser userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList()));
+        // Extract roles from the CreditorUserRoleMap relationship
+        Set<String> roles = userDetails.getCreditorUserRoleMap().stream()
+                .map(roleMap -> roleMap.getCreditorRole().getName())
+                .collect(Collectors.toSet());
+
+        claims.put("roles", new ArrayList<>(roles)); // Convert to List if needed
 
         return Jwts.builder()
                 .setClaims(claims)

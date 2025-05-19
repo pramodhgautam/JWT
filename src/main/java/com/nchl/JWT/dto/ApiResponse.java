@@ -14,9 +14,11 @@ import java.time.Instant;
 @AllArgsConstructor
 public class ApiResponse<T> {
     private String responseCode;
+    private String responseStatus;
     private String responseMessage;
     private T data;
     private Instant timestamp;
+    private String errors;
 
     // Success static factory methods
     public static <T> ApiResponse<T> success(T data) {

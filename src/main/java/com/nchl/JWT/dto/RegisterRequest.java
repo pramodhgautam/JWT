@@ -1,10 +1,12 @@
 package com.nchl.JWT.dto;
 
-import com.nchl.JWT.model.Role;
+import com.nchl.JWT.model.CreditorUserRoleMap;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.*;
+
+import java.util.Set;
 
 @Data
 @Getter
@@ -13,19 +15,32 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RegisterRequest {
+
+    @NotBlank(message = "Username is required")
+    private String username;
+
     @NotBlank(message = "Firstname is required")
-    private String firstname;
+    private String firstName;
+
+    @NotBlank(message = "Firstname is required")
+    private String middleName;
 
     @NotBlank(message = "Lastname is required")
-    private String lastname;
+    private String lastName;
+
+    @NotBlank(message = "Lastname is required")
+    private String mobileNumber;
 
     @Email(message = "Email should be valid")
     @NotBlank(message = "Email is required")
     private String email;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
-    private String password;
+//    @NotBlank(message = "Outlet is required")
+//    private String outlet;
 
-    private Role role;
+    @NotBlank(message = "Terminal is required")
+    private String terminal;
+
+    @NotEmpty(message = "At least one role is required")
+    private Set<Long> roleIds;
 }

@@ -1,23 +1,26 @@
 package com.nchl.JWT.service;
 
 import com.nchl.JWT.dto.*;
-import com.nchl.JWT.exception.UserAlreadyExistsException;
-import com.nchl.JWT.model.ResponseCode;
-import com.nchl.JWT.model.Role;
+import com.nchl.JWT.model.CreditorRole;
 import com.nchl.JWT.model.CreditorUser;
+import com.nchl.JWT.model.CreditorUserRoleMap;
+import com.nchl.JWT.model.ResponseCode;
+import com.nchl.JWT.repository.CreditorRoleRepository;
 import com.nchl.JWT.repository.UserRepository;
+import com.nchl.JWT.repository.specification.CreditorRoleSpecification;
 import com.nchl.JWT.security.JwtService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import lombok.extern.slf4j.Slf4j;
-
-import java.time.LocalDateTime;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -28,12 +31,14 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public ApiResponse<UserResponse> register(RegisterRequest request) {
+    private final CreditorRoleRepository creditorRoleRepository;
+
+    public ApiResponse<CreditorUserDto> register(RegisterRequest request) {
         try {
             // Check if user already exists
             if (userRepository.findByEmail(request.getEmail()).isPresent()) {
                 log.warn("Registration attempt with existing email: {}", request.getEmail());
-                return (ApiResponse<UserResponse>) ApiResponse.failure(
+                return (ApiResponse<CreditorUserDto>) ApiResponse.failure(
                         ResponseCode.CONFLICT,
                         "User with email " + request.getEmail() + " already exists"
                 );
@@ -41,12 +46,37 @@ public class AuthService {
 
             // Build and save new user
             CreditorUser user = CreditorUser.builder()
-                    .firstname(request.getFirstname())
-                    .lastname(request.getLastname())
+                    .username(request.getUsername())
+                    .firstName(request.getFirstName())
+                    .middleName(request.getMiddleName())
+                    .lastName(request.getLastName())
+                    .mobileNumber(request.getMobileNumber())
                     .email(request.getEmail())
-                    .password(passwordEncoder.encode(request.getPassword()))
-                    .role(request.getRole() != null ? request.getRole() : Role.USER)
+                    .terminal(request.getTerminal())
                     .build();
+
+            // Handle role mapping
+            CreditorRole userRole = null; // We'll store the first role here
+            if (request.getRoleIds() != null && !request.getRoleIds().isEmpty()) {
+                Set<CreditorUserRoleMap> roleMappings = request.getRoleIds().stream()
+                        .map(roleId -> {
+
+                            Specification<CreditorRole> creditorUserSpecification = CreditorRoleSpecification
+                                    .byId(roleId);
+
+                            CreditorRole role = creditorRoleRepository
+                                    .findOne(creditorUserSpecification)
+                                    .orElseThrow(() -> new EntityNotFoundException("Role not found with id: " + roleId));
+
+                            return CreditorUserRoleMap.builder()
+                                    .creditorRole(role)
+                                    .creditorUser(user) // Set the bidirectional relationship
+                                    .build();
+                        })
+                        .collect(Collectors.toSet());
+
+                user.setCreditorUserRoleMap(roleMappings);
+            }
 
             CreditorUser savedUser = userRepository.save(user);
             log.info("New user registered with ID: {}", savedUser.getId());
@@ -55,13 +85,16 @@ public class AuthService {
             String jwtToken = jwtService.generateToken(user);
 
             // Build response data
-            UserResponse userData = UserResponse.builder()
-                    .userId(savedUser.getId())
+            CreditorUserDto userData = CreditorUserDto.builder()
+                    .id(savedUser.getId())
+                    .username(savedUser.getUsername())
+                    .firstName(savedUser.getFirstName())
+                    .middleName(savedUser.getMiddleName())
+                    .lastName(savedUser.getLastName())
+                    .mobileNumber(savedUser.getMobileNumber())
                     .email(savedUser.getEmail())
-                    .role(savedUser.getRole().name())
-                    .firstname(savedUser.getFirstname())
-                    .lastname(savedUser.getLastname())
-                    .createdAt(LocalDateTime.now())
+                    .terminal(savedUser.getTerminal())
+                    .role(String.valueOf(userRole != null ? userRole.getId().intValue() : null))
                     .token(jwtToken)
                     .build();
 
@@ -73,7 +106,7 @@ public class AuthService {
 
         } catch (Exception e) {
             log.error("Registration failed for email: {}", request.getEmail(), e);
-            return (ApiResponse<UserResponse>) ApiResponse.failure(
+            return (ApiResponse<CreditorUserDto>) ApiResponse.failure(
                     ResponseCode.SERVER_ERROR,
                     "Registration failed. Please try again later."
             );
