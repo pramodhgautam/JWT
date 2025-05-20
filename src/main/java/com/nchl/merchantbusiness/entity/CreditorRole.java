@@ -1,4 +1,4 @@
-package com.nchl.merchantbusiness.model;
+package com.nchl.merchantbusiness.entity;
 
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -29,11 +29,9 @@ public class CreditorRole implements Serializable {
     @Column(name = "is_enable")
     private boolean enable;
 
-    //USER ACTION DEFINE IN SAME TABLE
     @Column(name="allowed_action")
     private String allowedAction;
 
-    // Best approach for Hibernate 6.x
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "allowed_action_org",columnDefinition = "jsonb")
     private Set<String> allowedActionOrg;

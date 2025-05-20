@@ -1,4 +1,4 @@
-package com.nchl.merchantbusiness.model;
+package com.nchl.merchantbusiness.constant;
 
 public enum ResponseCode {
     SUCCESS("000", "Operation successful"),

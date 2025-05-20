@@ -1,11 +1,11 @@
 package com.nchl.merchantbusiness.service;
 
-import com.nchl.merchantbusiness.dto.ApiResponse;
+import com.nchl.merchantbusiness.dto.APIResponse;
 import com.nchl.merchantbusiness.dto.CreditorUserDto;
 import com.nchl.merchantbusiness.exception.UserNotFoundException;
-import com.nchl.merchantbusiness.model.CreditorUser;
-import com.nchl.merchantbusiness.model.CreditorUserRoleMap;
-import com.nchl.merchantbusiness.model.ResponseCode;
+import com.nchl.merchantbusiness.entity.CreditorUser;
+import com.nchl.merchantbusiness.entity.CreditorUserRoleMap;
+import com.nchl.merchantbusiness.constant.ResponseCode;
 import com.nchl.merchantbusiness.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +33,7 @@ public class UserService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository.findByUsername(username)
                 .map(user -> {
-                    // Extract roles from CreditorUserRoleMap
+
                     Set<GrantedAuthority> authorities = user.getCreditorUserRoleMap().stream()
                             .filter(Objects::nonNull)
                             .map(CreditorUserRoleMap::getCreditorRole)
@@ -42,7 +42,6 @@ public class UserService implements UserDetailsService {
                             .collect(Collectors.toSet());
 
                     if (authorities.isEmpty()) {
-                        // Assign default role if no roles found
                         authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
                     }
 
@@ -55,31 +54,31 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
     }
 
-    public ApiResponse<List<CreditorUserDto>> getAllUsers() {
+    public APIResponse<List<CreditorUserDto>> getAllUsers() {
         try {
             List<CreditorUserDto> users = userRepository.findAll()
                     .stream()
                     .map(userMapper::toDto)
                     .toList();
 
-            return ApiResponse.<List<CreditorUserDto>>builder()
-                    .responseCode(ResponseCode.SUCCESS.getCode())
-                    .responseMessage("Users retrieved successfully")
+            return APIResponse.<List<CreditorUserDto>>builder()
+                    .code(ResponseCode.SUCCESS.getCode())
+                    .message("Users retrieved successfully")
                     .data(users)
                     .timestamp(Instant.now())
                     .build();
 
         } catch (Exception e) {
             log.error("Failed to retrieve users", e);
-            return ApiResponse.<List<CreditorUserDto>>builder()
-                    .responseCode(ResponseCode.SERVER_ERROR.getCode())
-                    .responseMessage("Failed to retrieve users")
+            return APIResponse.<List<CreditorUserDto>>builder()
+                    .code(ResponseCode.SERVER_ERROR.getCode())
+                    .message("Failed to retrieve users")
                     .timestamp(Instant.now())
                     .build();
         }
     }
 
-    public ApiResponse<CreditorUserDto> getUserById(Integer id) {
+    public APIResponse<CreditorUserDto> getUserById(Integer id) {
         log.info("🟠 Service fetching user by ID: {}", id);
         try {
 
@@ -87,44 +86,43 @@ public class UserService implements UserDetailsService {
                     .map(userMapper::toDto)
                     .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
 
-            return ApiResponse.<CreditorUserDto>builder()
-                    .responseCode(ResponseCode.SUCCESS.getCode())
-                    .responseMessage("User retrieved successfully")
+            return APIResponse.<CreditorUserDto>builder()
+                    .code(ResponseCode.SUCCESS.getCode())
+                    .message("User retrieved successfully")
                     .data(userDto)
                     .timestamp(Instant.now())
                     .build();
 
         } catch (UserNotFoundException e) {
             log.warn("User not found with ID: {}", id);
-            return ApiResponse.<CreditorUserDto>builder()
-                    .responseCode(ResponseCode.NOT_FOUND.getCode())
-                    .responseMessage(e.getMessage())
+            return APIResponse.<CreditorUserDto>builder()
+                    .code(ResponseCode.NOT_FOUND.getCode())
+                    .message(e.getMessage())
                     .build();
         } catch (Exception e) {
             log.error("Error fetching user with ID: {}", id, e);
-            return ApiResponse.<CreditorUserDto>builder()
-                    .responseCode(ResponseCode.SERVER_ERROR.getCode())
-                    .responseMessage("Failed to retrieve user")
+            return APIResponse.<CreditorUserDto>builder()
+                    .code(ResponseCode.SERVER_ERROR.getCode())
+                    .message("Failed to retrieve user")
                     .build();
         }
     }
 
-    // Additional helper method with builder pattern
-    public ApiResponse<CreditorUser> findUserEntityById(Integer id) {
+    public APIResponse<CreditorUser> findUserEntityById(Integer id) {
         try {
             CreditorUser user = userRepository.findById(id)
                     .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-            return ApiResponse.<CreditorUser>builder()
-                    .responseCode(ResponseCode.SUCCESS.getCode())
-                    .responseMessage("User entity retrieved successfully")
+            return APIResponse.<CreditorUser>builder()
+                    .code(ResponseCode.SUCCESS.getCode())
+                    .message("User entity retrieved successfully")
                     .data(user)
                     .build();
 
         } catch (UserNotFoundException e) {
-            return ApiResponse.<CreditorUser>builder()
-                    .responseCode(ResponseCode.NOT_FOUND.getCode())
-                    .responseMessage(e.getMessage())
+            return APIResponse.<CreditorUser>builder()
+                    .code(ResponseCode.NOT_FOUND.getCode())
+                    .message(e.getMessage())
                     .build();
         }
     }

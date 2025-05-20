@@ -1,6 +1,6 @@
 package com.nchl.merchantbusiness.controller;
 
-import com.nchl.merchantbusiness.dto.ApiResponse;
+import com.nchl.merchantbusiness.dto.APIResponse;
 import com.nchl.merchantbusiness.dto.CreditorUserDto;
 import com.nchl.merchantbusiness.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -22,24 +22,23 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<CreditorUserDto>>> getAllUsers() {
-        ApiResponse<List<CreditorUserDto>> response = userService.getAllUsers();
+    public ResponseEntity<APIResponse<List<CreditorUserDto>>> getAllUsers() {
+        APIResponse<List<CreditorUserDto>> response = userService.getAllUsers();
         return ResponseEntity
-                .status(getHttpStatusFromResponseCode(response.getResponseCode()))
+                .status(getHttpStatusFromResponseCode(response.getCode()))
                 .body(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<CreditorUserDto>> getUserById(@PathVariable Integer id) {
+    public ResponseEntity<APIResponse<CreditorUserDto>> getUserById(@PathVariable Integer id) {
         log.debug("Fetching user with ID: {}", id);
-        ApiResponse<CreditorUserDto> response = userService.getUserById(id);
+        APIResponse<CreditorUserDto> response = userService.getUserById(id);
         log.debug("Found user response: {}", response);
         return ResponseEntity
-                .status(getHttpStatusFromResponseCode(response.getResponseCode()))
+                .status(getHttpStatusFromResponseCode(response.getCode()))
                 .body(response);
     }
 
-    // Helper method to map response codes to HTTP statuses
     private HttpStatus getHttpStatusFromResponseCode(String responseCode) {
         return switch (responseCode) {
             case "000" -> HttpStatus.OK;

@@ -46,12 +46,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
             if (jwtService.isTokenValid(jwt, userDetails)) {
-                // Extract roles from token and create authorities
+
                 List<SimpleGrantedAuthority> authorities = jwtService.extractRoles(jwt).stream()
                         .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
 
-                // If no roles in token, fall back to userDetails' authorities
                 if (authorities.isEmpty()) {
                     authorities = userDetails.getAuthorities().stream()
                             .map(a -> new SimpleGrantedAuthority(a.getAuthority()))

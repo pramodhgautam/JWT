@@ -1,4 +1,4 @@
-package com.nchl.merchantbusiness.model;
+package com.nchl.merchantbusiness.entity;
 
 import lombok.*;
 
@@ -22,14 +22,9 @@ public class CreditorUserRoleMap implements Serializable {
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id")
     private CreditorRole creditorRole;
-//    @OneToMany(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "role_id")
-//    private Set<CreditorRole> creditorRole;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creditor_user_id")
     private CreditorUser creditorUser;
-
-
 
 }

@@ -1,8 +1,8 @@
 package com.nchl.merchantbusiness.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nchl.merchantbusiness.model.EntityAuditInfo;
-import com.nchl.merchantbusiness.model.CreditorUserRoleMap;
+import com.nchl.merchantbusiness.entity.EntityAuditInfo;
+import com.nchl.merchantbusiness.entity.CreditorUserRoleMap;
 import lombok.*;
 
 import jakarta.validation.constraints.Email;

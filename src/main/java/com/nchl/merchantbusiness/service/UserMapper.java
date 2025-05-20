@@ -1,7 +1,7 @@
 package com.nchl.merchantbusiness.service;
 
 import com.nchl.merchantbusiness.dto.CreditorUserDto;
-import com.nchl.merchantbusiness.model.CreditorUser;
+import com.nchl.merchantbusiness.entity.CreditorUser;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 

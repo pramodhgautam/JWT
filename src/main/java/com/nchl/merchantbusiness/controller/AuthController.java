@@ -1,6 +1,6 @@
 package com.nchl.merchantbusiness.controller;
 
-import com.nchl.merchantbusiness.dto.ApiResponse;
+import com.nchl.merchantbusiness.dto.APIResponse;
 import com.nchl.merchantbusiness.dto.AuthRequest;
 import com.nchl.merchantbusiness.dto.AuthResponse;
 import com.nchl.merchantbusiness.dto.RegisterRequest;
@@ -20,7 +20,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<APIResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
 

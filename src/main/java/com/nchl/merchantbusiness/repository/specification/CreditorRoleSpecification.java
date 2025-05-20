@@ -1,7 +1,6 @@
 package com.nchl.merchantbusiness.repository.specification;
 
-import com.nchl.merchantbusiness.model.CreditorRole;
-import com.nchl.merchantbusiness.model.CreditorUser;
+import com.nchl.merchantbusiness.entity.CreditorRole;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 

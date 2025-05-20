@@ -1,7 +1,6 @@
 package com.nchl.merchantbusiness.repository;
 
-import com.nchl.merchantbusiness.model.CreditorUser;
-import jakarta.validation.constraints.Email;
+import com.nchl.merchantbusiness.entity.CreditorUser;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

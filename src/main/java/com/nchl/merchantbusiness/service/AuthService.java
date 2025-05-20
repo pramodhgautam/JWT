@@ -1,10 +1,10 @@
 package com.nchl.merchantbusiness.service;
 
 import com.nchl.merchantbusiness.dto.*;
-import com.nchl.merchantbusiness.model.CreditorRole;
-import com.nchl.merchantbusiness.model.CreditorUser;
-import com.nchl.merchantbusiness.model.CreditorUserRoleMap;
-import com.nchl.merchantbusiness.model.ResponseCode;
+import com.nchl.merchantbusiness.entity.CreditorRole;
+import com.nchl.merchantbusiness.entity.CreditorUser;
+import com.nchl.merchantbusiness.entity.CreditorUserRoleMap;
+import com.nchl.merchantbusiness.constant.ResponseCode;
 import com.nchl.merchantbusiness.repository.CreditorRoleRepository;
 import com.nchl.merchantbusiness.repository.UserRepository;
 import com.nchl.merchantbusiness.repository.specification.CreditorRoleSpecification;
@@ -20,8 +20,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -34,18 +37,17 @@ public class AuthService {
 
     private final CreditorRoleRepository creditorRoleRepository;
 
-    public ApiResponse<CreditorUserDto> register(RegisterRequest request) {
+    public APIResponse<CreditorUserDto> register(RegisterRequest request) {
         try {
-            // Check if user already exists
+
             if (userRepository.findByEmail(request.getEmail()).isPresent()) {
                 log.warn("Registration attempt with existing email: {}", request.getEmail());
-                return (ApiResponse<CreditorUserDto>) ApiResponse.failure(
+                return (APIResponse<CreditorUserDto>) APIResponse.failure(
                         ResponseCode.CONFLICT,
                         "User with email " + request.getEmail() + " already exists"
                 );
             }
 
-            // Build and save new user
             CreditorUser user = CreditorUser.builder()
                     .username(request.getUsername())
                     .firstName(request.getFirstName())
@@ -56,8 +58,7 @@ public class AuthService {
                     .terminal(request.getTerminal())
                     .build();
 
-            // Handle role mapping
-            CreditorRole userRole = null; // We'll store the first role here
+            CreditorRole userRole = null;
             if (request.getRoleIds() != null && !request.getRoleIds().isEmpty()) {
                 Set<CreditorUserRoleMap> roleMappings = request.getRoleIds().stream()
                         .map(roleId -> {
@@ -71,7 +72,7 @@ public class AuthService {
 
                             return CreditorUserRoleMap.builder()
                                     .creditorRole(role)
-                                    .creditorUser(user) // Set the bidirectional relationship
+                                    .creditorUser(user)
                                     .build();
                         })
                         .collect(Collectors.toSet());
@@ -82,10 +83,8 @@ public class AuthService {
             CreditorUser savedUser = userRepository.save(user);
             log.info("New user registered with ID: {}", savedUser.getId());
 
-            // Generate JWT token (if needed for immediate login)
             String jwtToken = jwtService.generateOneTimeToken(user);
 
-            // Build response data
             CreditorUserDto userData = CreditorUserDto.builder()
                     .id(savedUser.getId())
                     .username(savedUser.getUsername())
@@ -99,15 +98,14 @@ public class AuthService {
                     .token(jwtToken)
                     .build();
 
-            // Return success response
-            return ApiResponse.success(
+            return APIResponse.success(
                     userData,
                     "User registered successfully"
             );
 
         } catch (Exception e) {
             log.error("Registration failed for email: {}", request.getEmail(), e);
-            return (ApiResponse<CreditorUserDto>) ApiResponse.failure(
+            return (APIResponse<CreditorUserDto>) APIResponse.failure(
                     ResponseCode.SERVER_ERROR,
                     "Registration failed. Please try again later."
             );
@@ -126,13 +124,47 @@ public class AuthService {
                 )
         );
 
-        // Generate token with ID as subject
-        String jwtToken = jwtService.generateToken(user);
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+
+        List<AuthResponse.Role> roles = user.getCreditorUserRoleMap().stream()
+                .map(CreditorUserRoleMap::getCreditorRole)
+                .flatMap(role -> {
+
+                    Stream<AuthResponse.Role> roleStream = Stream.of(
+                            AuthResponse.Role.builder()
+                                    .authority(role.getName())
+                                    .build()
+                    );
+
+                    if (role.getAllowedActionOrg() != null && !role.getAllowedActionOrg().isEmpty()) {
+                        Stream<AuthResponse.Role> actionStream = role.getAllowedActionOrg().stream()
+                                .map(action -> AuthResponse.Role.builder()
+                                        .authority(action)
+                                        .build());
+                        return Stream.concat(roleStream, actionStream);
+                    }
+                    return roleStream;
+                })
+                .distinct()
+                .collect(Collectors.toList());
+
+        AuthResponse.TokenData tokenData = AuthResponse.TokenData.builder()
+                .access_token(accessToken)
+                .token_type("bearer")
+                .refresh_token(refreshToken)
+                .expires_in((int) (jwtService.getJwtExpiration() / 1000))
+                .scope("read write trust")
+                .build();
 
         return AuthResponse.builder()
-                .responseCode("000")
-                .responseMessage("User authenticated successfully.")
-                .token(jwtToken)
+                .code("000")
+                .status("SUCCESS")
+                .message("User authenticated successfully.")
+                .data(tokenData)
+                .roles(roles)
+                .id(user.getUsername())
+                .jti(UUID.randomUUID().toString())
                 .build();
     }
 }

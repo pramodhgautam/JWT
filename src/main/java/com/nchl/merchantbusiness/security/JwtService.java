@@ -1,8 +1,8 @@
 package com.nchl.merchantbusiness.security;
 
-import com.nchl.merchantbusiness.model.CreditorUser;
-import com.nchl.merchantbusiness.model.CreditorRole;
-import com.nchl.merchantbusiness.model.CreditorUserRoleMap;
+import com.nchl.merchantbusiness.entity.CreditorUser;
+import com.nchl.merchantbusiness.entity.CreditorRole;
+import com.nchl.merchantbusiness.entity.CreditorUserRoleMap;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -30,14 +31,11 @@ public class JwtService {
     @Value("${jwt.one-time-expiration}")
     private long oneTimeTokenExpiration = TimeUnit.MINUTES.toMillis(5); // Default 5 minutes
 
-    // Thread-safe token revocation store
     private final Set<String> revokedTokens = ConcurrentHashMap.newKeySet();
-//    private final long clockSkewSeconds = 30000;
 
     public String generateToken(CreditorUser user) {
         Map<String, Object> claims = new HashMap<>();
 
-        // Extract role names
         List<String> roles = user.getCreditorUserRoleMap().stream()
                 .map(CreditorUserRoleMap::getCreditorRole)
                 .map(CreditorRole::getName)
@@ -79,7 +77,6 @@ public class JwtService {
         claims.put("aud", "your-audience");
         claims.put("jti", UUID.randomUUID().toString()); // Unique token identifier
 
-        // Type-safe role extraction from Set<CreditorUserRoleMap>
         Set<String> roles = Optional.ofNullable(userDetails.getCreditorUserRoleMap())
                 .orElse(Collections.emptySet()) // Use emptySet instead of emptyList
                 .stream()
@@ -94,16 +91,6 @@ public class JwtService {
 
         return buildToken(claims, userDetails.getUsername(), oneTimeTokenExpiration);
     }
-
-//    private String buildToken(Map<String, Object> claims, String subject, long expiration) {
-//        return Jwts.builder()
-//                .setClaims(claims)
-//                .setSubject(subject)
-//                .setIssuedAt(new Date(System.currentTimeMillis()))
-//                .setExpiration(new Date(System.currentTimeMillis() + expiration))
-//                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
-//                .compact();
-//    }
 
     private Key getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
@@ -122,15 +109,13 @@ public class JwtService {
         try {
             final Claims claims = parseToken(token);
 
-            // Check if token is revoked
             if (isTokenRevoked(token)) {
                 log.warn("Token has been revoked: {}", token);
                 return false;
             }
 
-            // Check one-time token usage
             if (Boolean.TRUE.equals(claims.get("oneTime", Boolean.class))) {
-                revokeToken(token); // Automatically revoke one-time tokens after first use
+                revokeToken(token);
             }
 
             return claims.getSubject().equals(userDetails.getUsername());
@@ -147,7 +132,6 @@ public class JwtService {
     private Claims parseToken(String token) {
         return Jwts.parser()
                 .setSigningKey(getSigningKey())
-//                .setAllowedClockSkewSeconds(clockSkewSeconds)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -171,4 +155,39 @@ public class JwtService {
     public long getJwtExpiration() {
         return jwtExpiration;
     }
+
+    public String generateAccessToken(CreditorUser user) {
+
+        List<String> authorities = user.getCreditorUserRoleMap().stream()
+                .map(CreditorUserRoleMap::getCreditorRole)
+                .flatMap(role -> {
+                    Stream<String> roleStream = Stream.of(role.getName());
+                    if (role.getAllowedActionOrg() != null) {
+                        return Stream.concat(roleStream, role.getAllowedActionOrg().stream());
+                    }
+                    return roleStream;
+                })
+                .distinct()
+                .collect(Collectors.toList());
+
+        return Jwts.builder()
+                .claim("roles", authorities)
+                .setSubject(user.getUsername())
+                .setId(UUID.randomUUID().toString())
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public String generateRefreshToken(CreditorUser user) {
+        return Jwts.builder()
+                .setSubject(user.getUsername())
+                .setId(UUID.randomUUID().toString())
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
 }

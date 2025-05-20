@@ -1,4 +1,4 @@
-package com.nchl.merchantbusiness.model;
+package com.nchl.merchantbusiness.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
