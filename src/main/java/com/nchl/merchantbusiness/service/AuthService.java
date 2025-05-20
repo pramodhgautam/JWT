@@ -127,28 +127,21 @@ public class AuthService {
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
 
-        List<AuthResponse.Role> roles = user.getCreditorUserRoleMap().stream()
+        // Get the primary role
+        String roleName = user.getCreditorUserRoleMap().stream()
+                .findFirst()
                 .map(CreditorUserRoleMap::getCreditorRole)
-                .flatMap(role -> {
+                .map(CreditorRole::getName)
+                .orElse("DEFAULT_ROLE");
 
-                    Stream<AuthResponse.Role> roleStream = Stream.of(
-                            AuthResponse.Role.builder()
-                                    .authority(role.getName())
-                                    .build()
-                    );
-
-                    if (role.getAllowedActionOrg() != null && !role.getAllowedActionOrg().isEmpty()) {
-                        Stream<AuthResponse.Role> actionStream = role.getAllowedActionOrg().stream()
-                                .map(action -> AuthResponse.Role.builder()
-                                        .authority(action)
-                                        .build());
-                        return Stream.concat(roleStream, actionStream);
-                    }
-                    return roleStream;
-                })
-                .distinct()
+        // Get authorities
+        List<String> authorities = user.getCreditorUserRoleMap().stream()
+                .map(CreditorUserRoleMap::getCreditorRole)
+                .filter(role -> role.getAllowedActionOrg() != null)
+                .flatMap(role -> role.getAllowedActionOrg().stream())
                 .collect(Collectors.toList());
 
+        // Build token data
         AuthResponse.TokenData tokenData = AuthResponse.TokenData.builder()
                 .access_token(accessToken)
                 .token_type("bearer")
@@ -162,9 +155,11 @@ public class AuthService {
                 .status("SUCCESS")
                 .message("User authenticated successfully.")
                 .data(tokenData)
-                .roles(roles)
+                .role(roleName)
+                .authorities(authorities)
                 .id(user.getUsername())
                 .jti(UUID.randomUUID().toString())
+                .firstLogin(user.isFirstLogin())
                 .build();
     }
 }

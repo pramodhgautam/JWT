@@ -158,20 +158,25 @@ public class JwtService {
 
     public String generateAccessToken(CreditorUser user) {
 
-        List<String> authorities = user.getCreditorUserRoleMap().stream()
+        String roleName = user.getCreditorUserRoleMap().stream()
+                .findFirst()
                 .map(CreditorUserRoleMap::getCreditorRole)
-                .flatMap(role -> {
-                    Stream<String> roleStream = Stream.of(role.getName());
-                    if (role.getAllowedActionOrg() != null) {
-                        return Stream.concat(roleStream, role.getAllowedActionOrg().stream());
-                    }
-                    return roleStream;
-                })
-                .distinct()
-                .collect(Collectors.toList());
+                .map(CreditorRole::getName)
+                .orElse("DEFAULT_ROLE");
+
+        Set<String> authorities = user.getCreditorUserRoleMap().stream()
+                .map(CreditorUserRoleMap::getCreditorRole)
+                .filter(role -> role.getAllowedActionOrg() != null)
+                .flatMap(role -> role.getAllowedActionOrg().stream())
+                .collect(Collectors.toSet());
+
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", roleName);
+        claims.put("authorities", new ArrayList<>(authorities));
+        claims.put("firstLogin", user.isFirstLogin());
 
         return Jwts.builder()
-                .claim("roles", authorities)
+                .setClaims(claims)
                 .setSubject(user.getUsername())
                 .setId(UUID.randomUUID().toString())
                 .setIssuedAt(new Date())

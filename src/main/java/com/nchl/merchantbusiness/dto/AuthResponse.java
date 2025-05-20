@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -17,15 +16,11 @@ public class AuthResponse<T> {
     private String status;
     private String message;
     private TokenData data;
-    private List<Role> roles;
+    private String role;  // Single role name
+    private List<String> authorities;  // List of action authorities
     private String id;
     private String jti;
-
-    @Data
-    @Builder
-    public static class Role {
-        private String authority;
-    }
+    private boolean firstLogin;
 
     @Data
     @Builder
@@ -36,7 +31,4 @@ public class AuthResponse<T> {
         private Integer expires_in;
         private String scope;
     }
-
-    @Builder.Default
-    private boolean oneTime = true;
 }
