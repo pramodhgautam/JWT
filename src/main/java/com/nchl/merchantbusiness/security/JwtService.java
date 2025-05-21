@@ -146,10 +146,23 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
-    @SuppressWarnings("unchecked")
     public List<String> extractRoles(String token) {
         Claims claims = parseToken(token);
-        return (List<String>) claims.getOrDefault("roles", Collections.emptyList());
+        Object rolesClaim = claims.get("roles");
+
+        if (rolesClaim == null) {
+            return Collections.emptyList();
+        }
+
+        if (rolesClaim instanceof List) {
+            return (List<String>) rolesClaim;
+        }
+
+        if (rolesClaim instanceof String) {
+            return Collections.singletonList((String) rolesClaim);
+        }
+
+        return Collections.emptyList();
     }
 
     public long getJwtExpiration() {
@@ -173,7 +186,7 @@ public class JwtService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("roles", roleName);
         claims.put("authorities", new ArrayList<>(authorities));
-        claims.put("firstLogin", user.isFirstLogin());
+        claims.put("passwordChangeStatus", user.getPasswordChangeStatus());
 
         return Jwts.builder()
                 .setClaims(claims)
@@ -193,6 +206,31 @@ public class JwtService {
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public boolean isTokenExpired(String token) {
+        return extractExpiration(token).before(new Date());
+    }
+
+    private Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
+    }
+
+    private Claims extractAllClaims(String token) {
+        return Jwts.parser()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    public boolean isRefreshTokenValid(String refreshToken, CreditorUser user) {
+        try {
+            final String username = extractUsername(refreshToken);
+            return (username.equals(user.getUsername())) && !isTokenExpired(refreshToken);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
 }

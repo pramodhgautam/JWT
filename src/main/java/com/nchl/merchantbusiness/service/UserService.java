@@ -5,7 +5,7 @@ import com.nchl.merchantbusiness.dto.CreditorUserDto;
 import com.nchl.merchantbusiness.exception.UserNotFoundException;
 import com.nchl.merchantbusiness.entity.CreditorUser;
 import com.nchl.merchantbusiness.entity.CreditorUserRoleMap;
-import com.nchl.merchantbusiness.constant.ResponseCode;
+import com.nchl.merchantbusiness.constant.ResponseDetail;
 import com.nchl.merchantbusiness.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +17,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -62,18 +63,16 @@ public class UserService implements UserDetailsService {
                     .toList();
 
             return APIResponse.<List<CreditorUserDto>>builder()
-                    .code(ResponseCode.SUCCESS.getCode())
+                    .code(ResponseDetail.SUCCESS.getRespCode())
                     .message("Users retrieved successfully")
                     .data(users)
-                    .timestamp(Instant.now())
                     .build();
 
         } catch (Exception e) {
             log.error("Failed to retrieve users", e);
             return APIResponse.<List<CreditorUserDto>>builder()
-                    .code(ResponseCode.SERVER_ERROR.getCode())
+                    .code(ResponseDetail.SERVER_ERROR.getRespCode())
                     .message("Failed to retrieve users")
-                    .timestamp(Instant.now())
                     .build();
         }
     }
@@ -87,22 +86,22 @@ public class UserService implements UserDetailsService {
                     .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
 
             return APIResponse.<CreditorUserDto>builder()
-                    .code(ResponseCode.SUCCESS.getCode())
+                    .code(ResponseDetail.SUCCESS.getRespCode())
                     .message("User retrieved successfully")
                     .data(userDto)
-                    .timestamp(Instant.now())
+                    .timeStamp(String.valueOf(LocalDateTime.now()))
                     .build();
 
         } catch (UserNotFoundException e) {
             log.warn("User not found with ID: {}", id);
             return APIResponse.<CreditorUserDto>builder()
-                    .code(ResponseCode.NOT_FOUND.getCode())
+                    .code(ResponseDetail.NOT_FOUND.getRespCode())
                     .message(e.getMessage())
                     .build();
         } catch (Exception e) {
             log.error("Error fetching user with ID: {}", id, e);
             return APIResponse.<CreditorUserDto>builder()
-                    .code(ResponseCode.SERVER_ERROR.getCode())
+                    .code(ResponseDetail.SERVER_ERROR.getRespCode())
                     .message("Failed to retrieve user")
                     .build();
         }
@@ -114,14 +113,14 @@ public class UserService implements UserDetailsService {
                     .orElseThrow(() -> new UserNotFoundException("User not found"));
 
             return APIResponse.<CreditorUser>builder()
-                    .code(ResponseCode.SUCCESS.getCode())
+                    .code(ResponseDetail.SUCCESS.getRespCode())
                     .message("User entity retrieved successfully")
                     .data(user)
                     .build();
 
         } catch (UserNotFoundException e) {
             return APIResponse.<CreditorUser>builder()
-                    .code(ResponseCode.NOT_FOUND.getCode())
+                    .code(ResponseDetail.NOT_FOUND.getRespCode())
                     .message(e.getMessage())
                     .build();
         }

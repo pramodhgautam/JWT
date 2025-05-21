@@ -1,5 +1,7 @@
 package com.nchl.merchantbusiness.exception;
 
+import com.nchl.merchantbusiness.constant.ResponseDetail;
+import com.nchl.merchantbusiness.dto.APIResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -8,7 +10,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestControllerAdvice
@@ -32,13 +37,21 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<String> handleUserNotFound(UserNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    public APIResponse handleUserNotFound(UserNotFoundException ex) {
+        return APIResponse.apiResponse(ResponseDetail.NOT_FOUND,ex.getMessage(), Collections.emptyMap());
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<String> handleBadCredentials(BadCredentialsException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password");
+    public ResponseEntity<Map<String, Object>> handleBadCredentials(BadCredentialsException ex) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("code", "401");
+        response.put("status", "ERROR");
+        response.put("message", ex.getMessage());
+        response.put("timeStamp", LocalDateTime.now().toString());
+        response.put("data", null);
+        response.put("errors", Collections.singletonList(ex.getMessage()));
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 
     @ExceptionHandler(Exception.class)

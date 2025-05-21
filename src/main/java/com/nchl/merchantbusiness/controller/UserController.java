@@ -1,51 +1,64 @@
 package com.nchl.merchantbusiness.controller;
 
+import com.nchl.merchantbusiness.constant.ResponseDetail;
 import com.nchl.merchantbusiness.dto.APIResponse;
-import com.nchl.merchantbusiness.dto.CreditorUserDto;
+import com.nchl.merchantbusiness.entity.ChangePasswordRequest;
+import com.nchl.merchantbusiness.entity.CreditorUser;
+import com.nchl.merchantbusiness.exception.UserNotFoundException;
+import com.nchl.merchantbusiness.repository.CreditorUserRepository;
 import com.nchl.merchantbusiness.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.Collections;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 public class UserController {
+
     private final UserService userService;
-    private static final Logger log = LoggerFactory.getLogger(UserController.class);
+    private final CreditorUserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<APIResponse<List<CreditorUserDto>>> getAllUsers() {
-        APIResponse<List<CreditorUserDto>> response = userService.getAllUsers();
-        return ResponseEntity
-                .status(getHttpStatusFromResponseCode(response.getCode()))
-                .body(response);
+    @PostMapping("/change-password")
+    public APIResponse changePassword(@RequestBody ChangePasswordRequest request) {
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+
+            return APIResponse.apiResponse(ResponseDetail.FAILURE,"New password and confirmation password don't match", Collections.emptyMap());
+        }
+
+
+        CreditorUser user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+
+        if ("Y".equalsIgnoreCase(user.getPasswordChangeStatus())) {
+
+            user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+            user.setPasswordChangeStatus("N");
+            userRepository.save(user);
+
+            return APIResponse.apiResponse(ResponseDetail.SUCCESS,"First login password change completed successfully",Collections.emptyMap());
+        }
+
+        else {
+
+            if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+
+                return APIResponse.apiResponse(ResponseDetail.FAILURE,"Wrong credentials",Collections.emptyMap());
+            }
+
+
+            user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+            userRepository.save(user);
+
+            return APIResponse.apiResponse(ResponseDetail.SUCCESS,"Password changed successfully",Collections.emptyMap());
+        }
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<APIResponse<CreditorUserDto>> getUserById(@PathVariable Integer id) {
-        log.debug("Fetching user with ID: {}", id);
-        APIResponse<CreditorUserDto> response = userService.getUserById(id);
-        log.debug("Found user response: {}", response);
-        return ResponseEntity
-                .status(getHttpStatusFromResponseCode(response.getCode()))
-                .body(response);
-    }
-
-    private HttpStatus getHttpStatusFromResponseCode(String responseCode) {
-        return switch (responseCode) {
-            case "000" -> HttpStatus.OK;
-            case "404" -> HttpStatus.NOT_FOUND;
-            case "401" -> HttpStatus.UNAUTHORIZED;
-            case "409" -> HttpStatus.CONFLICT;
-            default -> HttpStatus.INTERNAL_SERVER_ERROR;
-        };
-    }
 }

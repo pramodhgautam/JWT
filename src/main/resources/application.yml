@@ -2,9 +2,9 @@ spring:
   application:
     name: merchant-business-gateway
   datasource:
-    url: jdbc:postgresql://localhost:5432/jwtUser
+    url: jdbc:postgresql://10.250.3.31:5432/Creditor
     username: postgres
-    password: newpassword
+    password: 123456
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -20,13 +20,13 @@ jwt:
   secret: VGhpcyBpcyBhIHNlY3JldCBrZXkgZm9yIEpXVCAyNTYtYml0IHNlY3VyaXR5IQ==
   expiration: 86400000
 
-logging:
-  level:
-    org.springframework.web: DEBUG
-    com.nchl: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-  file:
-    name: logs/application.log
+#logging:
+#  level:
+#    org.springframework.web: DEBUG
+#    com.nchl: DEBUG
+#    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+#  file:
+#    name: logs/application.log
 
 server:
   error:
