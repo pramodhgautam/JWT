@@ -56,8 +56,35 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleGeneralException(Exception ex) {
-        ex.printStackTrace(); // Log the exception
+        ex.printStackTrace();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("Error: " + ex.getMessage());
     }
+
+    @ExceptionHandler(PaymentException.class)
+    public ResponseEntity<ErrorResponse> handlePaymentException(PaymentException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                ex.getErrorCode(),
+                ex.getMessage(),
+                System.currentTimeMillis()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    private static class ErrorResponse {
+        private final String errorCode;
+        private final String message;
+        private final long timestamp;
+
+        public ErrorResponse(String errorCode, String message, long timestamp) {
+            this.errorCode = errorCode;
+            this.message = message;
+            this.timestamp = timestamp;
+        }
+
+        public String getErrorCode() { return errorCode; }
+        public String getMessage() { return message; }
+        public long getTimestamp() { return timestamp; }
+    }
+
 }

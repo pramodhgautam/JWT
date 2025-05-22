@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 @Slf4j
 @Service
 public class JwtService {
+
     @Value("${jwt.secret}")
     private String secretKey;
 

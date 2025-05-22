@@ -2,9 +2,9 @@ spring:
   application:
     name: merchant-business-gateway
   datasource:
-    url: jdbc:postgresql://10.250.3.31:5432/Creditor
+    url: jdbc:postgresql://localhost:5432/jwtUser
     username: postgres
-    password: 123456
+    password: newpassword
     driver-class-name: org.postgresql.Driver
 
   jpa:
