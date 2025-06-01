@@ -1,50 +1,50 @@
 package com.nchl.merchantbusiness.dto;
 
-import com.nchl.merchantbusiness.constant.ResponseCode;
-import lombok.AllArgsConstructor;
+import com.nchl.merchantbusiness.constant.ResponseDetail;
+import com.nchl.merchantbusiness.entity.InputFieldError;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 
-@Data
+@Getter
+@Setter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class APIResponse<T> {
+
     private String code;
     private String status;
     private String message;
-    private Instant timestamp;
+    private String timeStamp;
     private T data;
-    private String errors;
+    private List<InputFieldError> errors;
 
-    public static <T> APIResponse<T> success(T data, String message) {
+    public static <T> APIResponse<T> apiResponse(ResponseDetail apiCode, String message, T responseBody) {
+
         return APIResponse.<T>builder()
-                .code(ResponseCode.SUCCESS.getCode())
+                .code(apiCode.getRespCode())
+                .status(apiCode.getRespStatus())
                 .message(message)
-                .data(data)
-                .timestamp(Instant.now())
+                .timeStamp(String.valueOf(LocalDateTime.now()))
+                .data(responseBody)
+                .errors(Collections.emptyList())
                 .build();
     }
 
-    public static APIResponse<?> failure(ResponseCode code, String message) {
-        return APIResponse.builder()
-                .code(code.getCode())
+    public static <T> APIResponse<T> apiResponse(ResponseDetail apiCode, String message, T responseBody,
+                                                 List<InputFieldError> errors) {
+
+        return APIResponse.<T>builder()
+                .code(apiCode.getRespCode())
+                .status(apiCode.getRespStatus())
                 .message(message)
-                .data(null)
-                .timestamp(Instant.now())
+                .timeStamp(String.valueOf(LocalDateTime.now()))
+                .data(responseBody)
+                .errors(errors)
                 .build();
-    }
-
-
-    public static APIResponse<?> validationError(String message) {
-        return failure(ResponseCode.VALIDATION_ERROR, message);
-    }
-
-    public static APIResponse<?> notFound(String resourceName) {
-        return failure(ResponseCode.NOT_FOUND,
-                resourceName + " not found");
     }
 }

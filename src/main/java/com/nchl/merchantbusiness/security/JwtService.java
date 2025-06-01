@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 @Slf4j
 @Service
 public class JwtService {
+
     @Value("${jwt.secret}")
     private String secretKey;
 
@@ -106,6 +107,7 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
+
         try {
             final Claims claims = parseToken(token);
 
@@ -119,10 +121,12 @@ public class JwtService {
             }
 
             return claims.getSubject().equals(userDetails.getUsername());
+
         } catch (ExpiredJwtException ex) {
             log.warn("Token expired at {} (Current time: {})",
                     ex.getClaims().getExpiration(), new Date());
             return false;
+
         } catch (JwtException | IllegalArgumentException ex) {
             log.error("Invalid JWT token: {}", ex.getMessage());
             return false;
@@ -146,10 +150,23 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
-    @SuppressWarnings("unchecked")
     public List<String> extractRoles(String token) {
         Claims claims = parseToken(token);
-        return (List<String>) claims.getOrDefault("roles", Collections.emptyList());
+        Object rolesClaim = claims.get("roles");
+
+        if (rolesClaim == null) {
+            return Collections.emptyList();
+        }
+
+        if (rolesClaim instanceof List) {
+            return (List<String>) rolesClaim;
+        }
+
+        if (rolesClaim instanceof String) {
+            return Collections.singletonList((String) rolesClaim);
+        }
+
+        return Collections.emptyList();
     }
 
     public long getJwtExpiration() {
@@ -173,7 +190,7 @@ public class JwtService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("roles", roleName);
         claims.put("authorities", new ArrayList<>(authorities));
-        claims.put("firstLogin", user.isFirstLogin());
+        claims.put("passwordChangeStatus", user.getPasswordChangeStatus());
 
         return Jwts.builder()
                 .setClaims(claims)
@@ -193,6 +210,31 @@ public class JwtService {
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public boolean isTokenExpired(String token) {
+        return extractExpiration(token).before(new Date());
+    }
+
+    private Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
+    }
+
+    private Claims extractAllClaims(String token) {
+        return Jwts.parser()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    public boolean isRefreshTokenValid(String refreshToken, CreditorUser user) {
+        try {
+            final String username = extractUsername(refreshToken);
+            return (username.equals(user.getUsername())) && !isTokenExpired(refreshToken);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
 }

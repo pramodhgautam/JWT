@@ -16,8 +16,8 @@ public class AuthResponse<T> {
     private String status;
     private String message;
     private TokenData data;
-    private String role;  // Single role name
-    private List<String> authorities;  // List of action authorities
+    private String role;
+    private List<String> authorities;
     private String id;
     private String jti;
     private boolean firstLogin;
@@ -25,10 +25,10 @@ public class AuthResponse<T> {
     @Data
     @Builder
     public static class TokenData {
-        private String access_token;
-        private String token_type;
-        private String refresh_token;
-        private Integer expires_in;
+        private String accessToken;
+        private String tokenType;
+        private String refreshToken;
+        private Integer expiresIn;
         private String scope;
     }
 }

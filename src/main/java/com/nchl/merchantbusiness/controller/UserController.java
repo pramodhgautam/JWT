@@ -1,51 +1,33 @@
 package com.nchl.merchantbusiness.controller;
 
+import com.nchl.merchantbusiness.constant.ResponseDetail;
 import com.nchl.merchantbusiness.dto.APIResponse;
-import com.nchl.merchantbusiness.dto.CreditorUserDto;
+import com.nchl.merchantbusiness.entity.ChangePasswordRequest;
+import com.nchl.merchantbusiness.entity.CreditorUser;
+import com.nchl.merchantbusiness.exception.UserNotFoundException;
+import com.nchl.merchantbusiness.repository.CreditorUserRepository;
+import com.nchl.merchantbusiness.service.ChangePasswordService;
 import com.nchl.merchantbusiness.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.Collections;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 public class UserController {
-    private final UserService userService;
-    private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
-    @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<APIResponse<List<CreditorUserDto>>> getAllUsers() {
-        APIResponse<List<CreditorUserDto>> response = userService.getAllUsers();
-        return ResponseEntity
-                .status(getHttpStatusFromResponseCode(response.getCode()))
-                .body(response);
+private final ChangePasswordService changePasswordService;
+
+    @PostMapping("/change-password")
+    public ResponseEntity<APIResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        return ResponseEntity.ok(changePasswordService.changePassword(request));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<APIResponse<CreditorUserDto>> getUserById(@PathVariable Integer id) {
-        log.debug("Fetching user with ID: {}", id);
-        APIResponse<CreditorUserDto> response = userService.getUserById(id);
-        log.debug("Found user response: {}", response);
-        return ResponseEntity
-                .status(getHttpStatusFromResponseCode(response.getCode()))
-                .body(response);
-    }
-
-    private HttpStatus getHttpStatusFromResponseCode(String responseCode) {
-        return switch (responseCode) {
-            case "000" -> HttpStatus.OK;
-            case "404" -> HttpStatus.NOT_FOUND;
-            case "401" -> HttpStatus.UNAUTHORIZED;
-            case "409" -> HttpStatus.CONFLICT;
-            default -> HttpStatus.INTERNAL_SERVER_ERROR;
-        };
-    }
 }

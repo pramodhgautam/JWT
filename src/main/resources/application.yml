@@ -20,14 +20,23 @@ jwt:
   secret: VGhpcyBpcyBhIHNlY3JldCBrZXkgZm9yIEpXVCAyNTYtYml0IHNlY3VyaXR5IQ==
   expiration: 86400000
 
-logging:
-  level:
-    org.springframework.web: DEBUG
-    com.nchl: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-  file:
-    name: logs/application.log
+#logging:
+#  level:
+#    org.springframework.web: DEBUG
+#    com.nchl: DEBUG
+#    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+#  file:
+#    name: logs/application.log
 
 server:
   error:
     include-stacktrace: always
+
+
+aws:
+  accessKeyId: ${AWS_ACCESS_KEY_ID}
+  secretKey: ${AWS_SECRET_ACCESS_KEY}
+  region: us-east-1
+  sns:
+    topic:
+      arn: arn:aws:sns:us-east-1:532877842082:global
